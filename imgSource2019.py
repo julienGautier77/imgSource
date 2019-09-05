@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 27 17:07:24 2019
-pip install pymba
+
 pip install qdarkstyle
 pip install pyqtgraph
 
-modify vimba.camera :acquire_frame(self) : self._single_frame.wait_for_capture(1000000)
-
 
 @author: juliengautier
-version : 2019.4
+
 """
-version='ImgSource_2019.4'
+version='ImgSource_2019.9'
 
 
 from PyQt5.QtWidgets import QApplication,QVBoxLayout,QHBoxLayout,QWidget,QPushButton
@@ -90,7 +88,9 @@ class IMGSOURCE(QWidget):
        
         
         
-    def setup(self):    
+    def setup(self):   
+        
+        cameraWidget=QWidget()
         vbox1=QVBoxLayout() 
         #vbox1.addStretch(1)
         
@@ -172,8 +172,12 @@ class IMGSOURCE(QWidget):
         vbox1.addWidget(self.TrigSoft)
         
         vbox1.addStretch(1)
+        
+        cameraWidget.setLayout(vbox1)
+        cameraWidget.setMinimumSize(150,200)
+        cameraWidget.setMaximumSize(200,900)
         hMainLayout=QHBoxLayout()
-        hMainLayout.addLayout(vbox1)
+        hMainLayout.addWidget(cameraWidget)
         
         
         self.visualisation=SEE()
@@ -334,7 +338,7 @@ if __name__ == "__main__":
     
     appli = QApplication(sys.argv) 
     appli.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-    e = IMGSOURCE('cam2')  
+    e = IMGSOURCE('camDefault')  
     e.show()
     appli.exec_()       
     
