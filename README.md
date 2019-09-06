@@ -7,13 +7,11 @@ it uses ic-imaging-control from :
 
     https://github.com/morefigs/py-ic-imaging-control
 
-It can make plot profile and data measurements  analysis
-
-    https://github.com/julienGautier77/imgSource
+It can make plot profile and data measurements analysis
 
 ## Requirements
 
-*  install Download the IC Imaging Control C SDK from here:
+*   Download and install the IC Imaging Control C SDK from here:
     http://www.theimagingsource.com/en_US/support/downloads/details/icimagingcontrolcwrapper/
 *   python 3.x
 *   Numpy
