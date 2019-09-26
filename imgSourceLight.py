@@ -31,12 +31,14 @@ from scipy.ndimage.filters import gaussian_filter
 from WinFullScreen import FULLSCREEN
 import qdarkstyle # pip install qdakstyle https://github.com/ColinDuquesnoy/QDarkStyleSheet  sur conda
 import pathlib,os
+from visu.winMeas import MEAS
 
 class CameraAcqD(QWidget) :
 
     def __init__(self,name=None,visuGauche=False):
         super(CameraAcqD, self).__init__()
         self.visuGauche=visuGauche
+        self.winM=MEAS()
         if name==None:
             self.nbcam='camTest'
         else:   
@@ -226,11 +228,11 @@ class CameraAcqD(QWidget) :
     
         hbox4.addWidget(self.checkBoxZoom)
         
-        self.checkBoxFullScreen=QCheckBox('FScreen',self)
-        self.checkBoxFullScreen.setChecked(False)
-        self.checkBoxFullScreen.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
+        self.MeasButton=QCheckBox('Meas',self)
+        self.MeasButton.setChecked(False)
+        self.MeasButton.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
     
-        hbox4.addWidget(self.checkBoxFullScreen)
+        hbox4.addWidget(self.MeasButton)
         
         
         vbox1.addLayout(hbox4)
@@ -340,7 +342,7 @@ class CameraAcqD(QWidget) :
         
         self.ro1.sigRegionChangeFinished.connect(self.roiChanged)
         self.checkBoxZoom.stateChanged.connect(self.Zoom)
-        self.checkBoxFullScreen.stateChanged.connect(self.FullScreen)
+        self.MeasButton.clicked.connect(self.Measurement)
 #        self.oneButton.clicked.connect(self.acquireOneImage)
         
     def Shutter(self):
@@ -369,13 +371,7 @@ class CameraAcqD(QWidget) :
             self.p1.setXRange(0,self.dimx)
             self.p1.setYRange(0,self.dimy)
         
-    def FullScreen(self):
-        if self.checkBoxFullScreen.isChecked()==1:
-            self.open_widget(self.winSC)
-            self.winSC.Display(self.data,color=self.color)
-            #self.winSC.showMaximized()
-        else:
-             self.winSC.close()
+    
          
     def Gain(self):
         g=self.hSliderGain.value()
@@ -441,15 +437,13 @@ class CameraAcqD(QWidget) :
         self.data=data
         if self.checkBoxScale.isChecked()==1: # autoscale on
             self.imh.setImage(data.astype(float),autoLevels=True,autoDownsample=True)
-            if self.checkBoxFullScreen.isChecked()==1 and self.winSC.isWinOpen==True:
-                self.winSC.Display(self.data,autoLevels=True,color=self.color)
+            
         else :
             self.imh.setImage(data.astype(float),autoLevels=False,autoDownsample=True)
-            if self.checkBoxFullScreen.isChecked()==1 and self.winSC.isWinOpen==True:
-                self.winSC.Display(self.data,autoLevels=False,color=self.color)
+            
         
-        if self.winSC.isWinOpen==False:
-            self.checkBoxFullScreen.setChecked(False)
+        if self.winM.isWinOpen==True: #  measurement update
+            self.Measurement()
     
         
     def bloquer(self): # bloque la croix 
@@ -524,10 +518,15 @@ class CameraAcqD(QWidget) :
             fene.show()
         else:
             #fene.activateWindow()
-            fene.raise_()
-            fene.showNormal()
+#            fene.raise_()
+#            fene.showNormal()
+            pass
             
-            
+    def Measurement(self) :
+        self.winM.setFile(self.camName)
+        self.open_widget(self.winM)
+        self.winM.Display(self.data)
+        
     def closeEvent(self,event):
         self.fin()
         event.accept()
