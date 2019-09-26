@@ -25,8 +25,7 @@ try :
 except :
     pass
 
-from scipy.interpolate import splrep, sproot # pour les coupes
-from scipy.ndimage.filters import gaussian_filter
+
 
 from WinFullScreen import FULLSCREEN
 import qdarkstyle # pip install qdakstyle https://github.com/ColinDuquesnoy/QDarkStyleSheet  sur conda
