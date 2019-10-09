@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from ctypes import *
-import time
+import time,sys
 import numpy as np
 from IC_GrabberDLL import IC_GrabberDLL
 from IC_Exception import IC_Exception
@@ -346,7 +346,7 @@ class IC_Camera(object):
         
         return (img_width.value, img_height.value, img_depth.value, color_format.value)
     
-    def snap_image(self, timeout=1000):
+    def snap_image(self, timeout=10000):
         """
         Snap an image. Device must be set to live mode and a format must be set.
         
@@ -402,11 +402,20 @@ class IC_Camera(object):
         return img
         
     def setExposure(self,exp):
-        exposure=int(exp)
+        #set exp in second
         
-        IC_GrabberDLL.set_exp_abs_val(self._handle,exposure)
-        #IC_GrabberDLL.set_exp_val(self._handle,exposure)
+        
+        self.setPropertyValue("Exposure","Value",exp)
+        
+        #print ('exposure set to', self.getPropertyValue("Exposure","Value"))
    
+    def setGain(self,gain):
+        #set exp in second
+        
+        
+        self.setPropertyValue("Gain","Value",gain)
+        
+        #print ('gain set to', self.getPropertyValue("Gain","Value"))
 #    def getExposure(self):
 #        exp=IC_GrabberDLL.get_camera_property(self._handle,c_int
         
@@ -476,8 +485,33 @@ class IC_Camera(object):
 
         return self._frame['num']
     
+    def s(self,strin):
+        if sys.version[0] == "2":
+            return strin
+        if type(strin) == "byte":
+            return strin
+        return strin.encode("utf-8")
+        
+    def getPropertyRange(self,Property,Element):
+#            Element=Null
+        ValueMax = c_float()
+        ValueMin = c_float()
+        err = IC_GrabberDLL.get_property_absolute_value_range (self._handle,
+                                                    self.s(Property),self.s(Element),
+                                                   ValueMin,ValueMax)
+        return (ValueMin.value,ValueMax.value)
     
+    def setPropertyValue(self, Property, Element, Value ):
+        error = IC_GrabberDLL.set_property_absolute_value(self._handle,
+                                                    self.s(Property),
+                                                    self.s(Element),
+                                                    Value)
+        return error
     
-    
-    
-    
+    def getPropertyValue(self, Property, Element):
+        Value = c_float()
+        IC_GrabberDLL.get_property_absolute_value(self._handle,
+                                                    self.s(Property),
+                                                    self.s(Element),
+                                                    Value)
+        return Value.value 

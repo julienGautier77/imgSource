@@ -11,34 +11,38 @@ Pyhton 3.x
 
 
 from PyQt5.QtWidgets import QApplication,QVBoxLayout,QHBoxLayout,QWidget,QPushButton,QSpinBox
-from PyQt5.QtWidgets import QComboBox,QSlider,QCheckBox,QLabel,QSizePolicy,QInputDialog
-from pyqtgraph.Qt import QtCore,QtGui 
+from PyQt5.QtWidgets import QComboBox,QSlider,QLabel,QInputDialog
+from pyqtgraph.Qt import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QShortcut
+
 from PyQt5.QtGui import QIcon
 
 import sys,time
-import pyqtgraph as pg # pyqtgraph biblio permettent l'affichage 
+ 
 import numpy as np
 try :
     import IC_ImagingControl 
 except :
     pass
 from scipy.ndimage.filters import gaussian_filter
+try :
+    from visu import SEE
+except:
+    print ('No visu module installed :see' )
 
 
-from WinFullScreen import FULLSCREEN
 import qdarkstyle # pip install qdakstyle https://github.com/ColinDuquesnoy/QDarkStyleSheet  sur conda
 import pathlib,os
-from visu.winMeas import MEAS
+
 
 class CameraAcqD(QWidget) :
 
-    def __init__(self,name=None,visuGauche=False):
+    def __init__(self,name=None,visuGauche=False,confVisu=None):
         super(CameraAcqD, self).__init__()
         self.visuGauche=visuGauche
-        self.winM=MEAS()
+        
         self.seuil=1
+        self.confVisu=confVisu
         if name==None:
             self.nbcam='camTest'
         else:   
@@ -47,8 +51,10 @@ class CameraAcqD(QWidget) :
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5()) # dark style 
         self.bloqHandle=1 # bloque la taille du cercle
         self.camType=self.confCCD.value(self.nbcam+"/camType")
-        if self.camType != 'imgSource':
-            print('error camera type')
+        
+#        if self.camType != 'imgSource':
+#            print('error camera type')
+            
         self.cameName=self.confCCD.value(self.nbcam+"/name")
         self.setWindowTitle(self.cameName)
         p = pathlib.Path(__file__)
@@ -69,8 +75,8 @@ class CameraAcqD(QWidget) :
         self.camName=self.confCCD.value(self.nbcam+"/name")
         
         self.setup()
-        self.Color()
-        self.winSC=FULLSCREEN(title=self.cameName,conf=self.confCCD,nbcam=self.nbcam)
+        
+        
         self.actionButton()
         try :
             self.cam0= ic_ic.get_device((self.id.encode()))#cam_names[0])
@@ -147,8 +153,7 @@ class CameraAcqD(QWidget) :
         self.data=twoD_Gaussian(x, y,250, 300, 600, 40, 40, 0, 10)+(50*np.random.rand(self.dimx,self.dimy)).round() 
         #self.data=(50*np.random.rand(self.dimx,self.dimy)).round() + 150
         
-        self.p1.setXRange(0,self.dimx)
-        self.p1.setYRange(0,self.dimy)
+        
         #self.p1.setGeometry(1,1,self.dimx,self.dimy)
         #self.winImage.setGeometry(1,1,self.dimx,self.dimy)
         self.Display(self.data)
@@ -233,35 +238,7 @@ class CameraAcqD(QWidget) :
         hboxGain.addWidget(self.gainBox)
         vbox1.addLayout(hboxGain)
         
-        hbox3=QHBoxLayout()
-        self.checkBoxScale=QCheckBox('AScale',self)
-        self.checkBoxScale.setChecked(True)
-        self.checkBoxScale.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
-    
-        hbox3.addWidget(self.checkBoxScale)
         
-        self.checkBoxColor=QCheckBox('Color',self)
-        self.checkBoxColor.setChecked(True)
-        self.checkBoxColor.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
-    
-        hbox3.addWidget(self.checkBoxColor)
-        
-        vbox1.addLayout(hbox3)
-        hbox4=QHBoxLayout()
-        self.checkBoxZoom=QCheckBox('Zoom',self)
-        self.checkBoxZoom.setChecked(False)
-        self.checkBoxZoom.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
-    
-        hbox4.addWidget(self.checkBoxZoom)
-        
-        self.MeasButton=QCheckBox('Meas',self)
-        self.MeasButton.setChecked(False)
-        self.MeasButton.setStyleSheet("QCheckBox::indicator{width: 30px;height: 30px;}""QCheckBox::indicator:unchecked { image : url(./icons/Toggle Off-595b40b85ba036ed117dac78.svg);}""QCheckBox::indicator:checked { image:  url(./icons/Toggle On-595b40b85ba036ed117dac79.svg);}")
-    
-        hbox4.addWidget(self.MeasButton)
-        
-        
-        vbox1.addLayout(hbox4)
         
         vbox1.setContentsMargins(0,0,0,0)
         vbox1.addStretch(1)
@@ -269,93 +246,20 @@ class CameraAcqD(QWidget) :
         
         ### affichage image###
         
-        self.winImage = pg.GraphicsLayoutWidget()
-        self.winImage.setContentsMargins(0,0,0,0)
-        self.winImage.setAspectLocked(True)
-        self.winImage.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.winImage.ci.setContentsMargins(0,0,0,0)
-        
-        vbox2=QVBoxLayout()
-        vbox2.addWidget(self.winImage)
-        vbox2.setContentsMargins(1,1,1,1)
-        
-    
-        self.p1=self.winImage.addPlot()
-        self.imh=pg.ImageItem()
-        self.p1.addItem(self.imh)
-        self.p1.setMouseEnabled(x=False,y=False)
-        self.p1.setContentsMargins(0,0,0,0)
-        self.p1.setAspectLocked(True,ratio=1)
-        self.p1.showAxis('right',show=False)
-        self.p1.showAxis('top',show=False)
-        self.p1.showAxis('left',show=False)
-        self.p1.showAxis('bottom',show=False)
-        
-        self.vLine = pg.InfiniteLine(angle=90, movable=False,pen='y')
-        self.hLine = pg.InfiniteLine(angle=0, movable=False,pen='y')
-        self.p1.addItem(self.vLine)
-        self.p1.addItem(self.hLine, ignoreBounds=False)
-        self.xc=int(self.confCCD.value(self.nbcam+"/xc"))
-        self.yc=int(self.confCCD.value(self.nbcam+"/yc"))
-        self.rx=int(self.confCCD.value(self.nbcam+"/rx"))
-        self.ry=int(self.confCCD.value(self.nbcam+"/ry"))
-        self.vLine.setPos(self.xc)
-        self.hLine.setPos(self.yc)
-        
-        self.ro1=pg.EllipseROI([self.xc,self.yc],[self.rx,self.ry],pen='y',movable=False)#maxBounds=QtCore.QRectF(0,0,self.rx,self.ry)
-        self.ro1.setPos([self.xc-(self.rx/2),self.yc-(self.ry/2)])
-        self.p1.addItem(self.ro1)
-        
-        
-        #histogramme
-        self.hist = pg.HistogramLUTItem() 
-        self.hist.setImageItem(self.imh)
-        self.hist.autoHistogramRange()
-        self.hist.gradient.loadPreset('flame')
-        
-        ## Graph coupe XY  
-        
-        self.curve2=pg.PlotCurveItem()
-        self.curve3=pg.PlotCurveItem()
-        
-        ## main layout
-        
+        cameraWidget=QWidget()
+        cameraWidget.setLayout(vbox1)
+        cameraWidget.setMinimumSize(150,200)
+        cameraWidget.setMaximumSize(200,900)
         hMainLayout=QHBoxLayout()
-        if self.visuGauche==True:
-            hMainLayout.addLayout(self.vbox1)
-            hMainLayout.addLayout(vbox2)
-        else:
-            hMainLayout.addLayout(vbox2)
-            hMainLayout.addLayout(self.vbox1)
-        hMainLayout.setContentsMargins(1,1,1,1)
-        hMainLayout.setSpacing(1)
-        hMainLayout.setStretch(3,1)
+        hMainLayout.addWidget(cameraWidget)
+        
+        self.visualisation=SEE(confpath=self.confVisu) ## Widget for visualisation and tools  self.confVisu permet d'avoir plusieurs camera et donc plusieurs fichier ini de visualisation
+        
+        vbox2=QVBoxLayout() 
+        vbox2.addWidget(self.visualisation)
+        hMainLayout.addLayout(vbox2)
         
         self.setLayout(hMainLayout)
-        self.setContentsMargins(1,1,1,1)
-        
-        # Blocage de la souris
-        self.shortcutb=QtGui.QShortcut(QtGui.QKeySequence("Ctrl+b"),self)
-        self.shortcutb.activated.connect(self.bloquer)
-        self.shortcutb.setContext(Qt.ShortcutContext(3))
-        self.shortcutd=QtGui.QShortcut(QtGui.QKeySequence("Ctrl+d"),self)
-        self.shortcutd.activated.connect(self.debloquer)
-        self.shortcutd.setContext(Qt.ShortcutContext(3))
-        self.shortcutPu=QShortcut(QtGui.QKeySequence("+"),self)
-        self.shortcutPu.activated.connect(self.paletteup)
-        self.shortcutPu.setContext(Qt.ShortcutContext(3))
-        #3: The shortcut is active when its parent widget, or any of its children has focus. default O The shortcut is active when its parent widget has focus.
-        self.shortcutPd=QtGui.QShortcut(QtGui.QKeySequence("-"),self)
-        self.shortcutPd.activated.connect(self.palettedown)
-        self.shortcutPd.setContext(Qt.ShortcutContext(3))
-        
-        # mvt de la souris
-        self.proxy=pg.SignalProxy(self.p1.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
-        self.vb=self.p1.vb
-        
-        # text pour afficher fwhm sur p1
-        self.textX = pg.TextItem(angle=-90) 
-        self.textY = pg.TextItem()
         
         
     def actionButton(self):
@@ -366,12 +270,7 @@ class CameraAcqD(QWidget) :
         self.hSliderGain.sliderMoved.connect(self.mSliderGain)
         self.gainBox.editingFinished.connect(self.gain)
         self.trigg.currentIndexChanged.connect(self.Trig)
-        self.checkBoxColor.stateChanged.connect(self.Color)
-        
-        self.ro1.sigRegionChangeFinished.connect(self.roiChanged)
-        self.checkBoxZoom.stateChanged.connect(self.Zoom)
-        self.MeasButton.clicked.connect(self.Measurement)
-#        self.oneButton.clicked.connect(self.acquireOneImage)
+#       self.oneButton.clicked.connect(self.acquireOneImage)
         
     def shutter(self):
         sh=self.shutterBox.value() # 
@@ -391,25 +290,8 @@ class CameraAcqD(QWidget) :
         self.cam0.setExposure(sh/1000) # Set shutter CCD in microseconde
         self.confCCD.setValue(self.nbcam+"/shutter",float(sh))   
        
-    
-    def Color(self):
-        """ image in colour
-        """
-        if self.checkBoxColor.isChecked()==1:
-            self.color='flame'
-            self.hist.gradient.loadPreset('flame')
-        else:
-            self.hist.gradient.loadPreset('grey')
-            self.color='grey'
-            
-    def Zoom(self):
-        if self.checkBoxZoom.isChecked()==1:
-            self.p1.setXRange(self.xc-200,self.xc+200)
-            self.p1.setYRange(self.yc-200,self.yc+200)
-        else:
-            self.p1.setXRange(0,self.dimx)
-            self.p1.setYRange(0,self.dimy)
-        
+
+
     
          
     def gain(self):
@@ -488,16 +370,11 @@ class CameraAcqD(QWidget) :
         #self.threadAcq.terminate()    
         
     def Display(self,data):
+        '''Display data with Visu module
+        '''
         self.data=data
-        if self.checkBoxScale.isChecked()==1: # autoscale on
-            self.imh.setImage(data.astype(float),autoLevels=True,autoDownsample=True)
-            
-        else :
-            self.imh.setImage(data.astype(float),autoLevels=False,autoDownsample=True)
-            
-        
-        if self.winM.isWinOpen==True: #  measurement update
-            self.Measurement()
+        self.visualisation.newDataReceived(self.data) # send data to visualisation widget
+    
     
         
     def bloquer(self): # bloque la croix 
